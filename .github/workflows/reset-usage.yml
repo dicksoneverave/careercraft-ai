@@ -1,0 +1,17 @@
+name: Monthly Usage Reset
+
+on:
+  schedule:
+    - cron: '0 0 1 * *'   # 1st of every month at midnight UTC
+  workflow_dispatch:        # allow manual trigger from GitHub UI
+
+jobs:
+  reset:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Reset free-tier usage counters
+        run: |
+          curl -sf -X POST "${{ secrets.SERVER_URL }}/api/admin/reset-usage" \
+            -H "Authorization: Bearer ${{ secrets.ADMIN_SECRET }}" \
+            && echo "Reset complete" \
+            || (echo "Reset failed" && exit 1)

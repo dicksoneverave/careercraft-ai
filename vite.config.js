@@ -6,7 +6,7 @@ export default defineConfig({
   base: '/careercraft/',
   server: {
     proxy: {
-      '/api': { target: 'http://localhost:3001', changeOrigin: true }
+      '/api': { target: 'http://localhost:3002', changeOrigin: true }
     }
   }
 })
