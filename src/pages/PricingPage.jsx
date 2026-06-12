@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { useToast } from '../components/Toast'
 import Sidebar from '../components/Sidebar'
@@ -69,13 +69,11 @@ export default function PricingPage() {
   const [loading, setLoading] = useState(null)
   const currentPlan = profile?.plan || 'free'
 
-  const SERVER = import.meta.env.VITE_SERVER_URL || ''
-
   async function handleUpgrade(plan) {
     if (!plan.id || plan.id === 'free') return
     setLoading(plan.id)
     try {
-      const res = await fetch(`${SERVER}/api/create-checkout`, {
+      const res = await fetch('/api/create-checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: profile?.id, plan: plan.id }),
