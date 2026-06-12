@@ -30,6 +30,18 @@
   --text-faint:    rgba(255,255,255,.35);
   --success:       #22c55e;
   --error:         #ef4444;
+  /* Legacy aliases — map to dark theme equivalents */
+  --ink:           #ffffff;
+  --ink-mid:       rgba(255,255,255,.65);
+  --ink-light:     rgba(255,255,255,.45);
+  --ink-faint:     rgba(255,255,255,.3);
+  --border:        rgba(255,255,255,.1);
+  --amber:         #f59e0b;
+  --amber-light:   rgba(245,158,11,.4);
+  --amber-faint:   rgba(245,158,11,.1);
+  --green:         #a78bfa;
+  --green-faint:   rgba(167,139,250,.12);
+  --font-display:  var(--font);
   --radius-sm:     6px;
   --radius:        10px;
   --radius-lg:     14px;

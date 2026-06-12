@@ -205,18 +205,18 @@ export default function ToolPage() {
           {step === 'fill' && !generating && (
             <div className="cc-fadein" style={{ maxWidth: 640 }}>
               {/* Tool info banner */}
-              <div style={{ background: tool.colorLight, border: `1px solid ${tool.color}30`, borderRadius: 'var(--radius-lg)', padding: '1rem 1.25rem', marginBottom: '1.5rem', display: 'flex', gap: '.75rem', alignItems: 'flex-start' }}>
+              <div style={{ background: 'var(--dark-card)', border: `1px solid ${tool.color}40`, borderLeft: `3px solid ${tool.color}`, borderRadius: 'var(--radius-lg)', padding: '1rem 1.25rem', marginBottom: '1.5rem', display: 'flex', gap: '.75rem', alignItems: 'flex-start' }}>
                 <span style={{ fontSize: 24 }}>{tool.icon}</span>
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem', flexWrap: 'wrap' }}>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: tool.color }}>{tool.label}</div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: 'white' }}>{tool.label}</div>
                     {tool.premium && (
-                      <span style={{ fontSize: 10, fontWeight: 700, background: 'rgba(245,158,11,.2)', border: '1px solid rgba(245,158,11,.4)', color: '#b45309', padding: '1px 7px', borderRadius: 20 }}>
+                      <span style={{ fontSize: 10, fontWeight: 700, background: 'rgba(245,158,11,.15)', border: '1px solid rgba(245,158,11,.35)', color: 'var(--gold-light)', padding: '1px 7px', borderRadius: 20 }}>
                         ⭐ PREMIUM
                       </span>
                     )}
                   </div>
-                  <div style={{ fontSize: 13, color: 'var(--ink-mid)', marginTop: 2, lineHeight: 1.5 }}>{tool.description}</div>
+                  <div style={{ fontSize: 13, color: 'var(--text-mid)', marginTop: 2, lineHeight: 1.5 }}>{tool.description}</div>
                 </div>
               </div>
 
