@@ -23,7 +23,7 @@ module.exports = async (req, res) => {
     .from('profiles').select('id').eq('id', userId).single()
   if (pErr || !profile) return res.status(401).json({ error: 'User not found' })
 
-  const isProduction = process.env.PADDLE_ENV === 'production'
+  const isProduction = process.env.VITE_PADDLE_ENV === 'production'
   const paddleBase   = isProduction ? 'https://api.paddle.com' : 'https://sandbox-api.paddle.com'
 
   try {
