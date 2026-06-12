@@ -37,7 +37,6 @@ const PLANS = [
       { text: 'Email support',           yes: true },
     ],
     cta: 'Upgrade to Pro',
-    priceId: () => import.meta.env.VITE_PADDLE_PRO_PRICE_ID,
   },
   {
     id: 'premium',
@@ -52,7 +51,6 @@ const PLANS = [
       { text: 'Priority support',        yes: true },
     ],
     cta: 'Upgrade to Premium',
-    priceId: () => import.meta.env.VITE_PADDLE_PREMIUM_PRICE_ID,
   },
 ]
 
@@ -71,43 +69,26 @@ export default function PricingPage() {
   const [loading, setLoading] = useState(null)
   const currentPlan = profile?.plan || 'free'
 
-  useEffect(() => {
-    if (window.Paddle) return
-    const s = document.createElement('script')
-    s.src = 'https://cdn.paddle.com/paddle/v2/paddle.js'
-    s.onload = () => {
-      // window.Paddle.Environment.set('sandbox') // ← UNCOMMENT for testing
-      window.Paddle.Initialize({ token: import.meta.env.VITE_PADDLE_CLIENT_TOKEN || '' })
-    }
-    document.head.appendChild(s)
-  }, [])
+  const SERVER = import.meta.env.VITE_SERVER_URL || ''
 
   async function handleUpgrade(plan) {
-    if (!plan.priceId) return
-    const priceId = plan.priceId()
-    if (!priceId) {
-      toast('Price ID not configured. Check .env.local', 'error')
-      return
-    }
-    if (!window.Paddle) {
-      toast('Payment system loading — try again in a moment.', 'error')
-      return
-    }
-
+    if (!plan.id || plan.id === 'free') return
     setLoading(plan.id)
     try {
-      window.Paddle.Checkout.open({
-        items: [{ priceId, quantity: 1 }],
-        customer: { email: profile?.email },
-        customData: { userId: profile?.id },
-        successCallback: async () => {
-          toast('Subscription activated! Your plan will update in a few seconds.', 'success')
-          setTimeout(() => refreshProfile(), 4000)
-        },
-        closeCallback: () => setLoading(null),
+      const res = await fetch(`${SERVER}/api/create-checkout`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: profile?.id, plan: plan.id }),
       })
+      const data = await res.json()
+      if (!res.ok || !data.transactionId) {
+        toast(data.error || 'Could not start checkout. Try again.', 'error')
+        setLoading(null)
+        return
+      }
+      window.location.href = `https://pay.javetech.online/careercraft?_ptxn=${data.transactionId}`
     } catch {
-      toast('Could not open checkout. Contact support.', 'error')
+      toast('Could not connect to payment server. Try again.', 'error')
       setLoading(null)
     }
   }

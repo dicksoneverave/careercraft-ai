@@ -29,6 +29,54 @@ app.use(express.json())
 // ── Health ──────────────────────────────────────────────────
 app.get('/api/health', (_req, res) => res.json({ ok: true, service: 'careercraft', ts: new Date().toISOString() }))
 
+// ── POST /api/create-checkout ───────────────────────────────
+// Creates a Paddle transaction server-side and returns the transaction ID.
+// The frontend then redirects to pay.javetech.online/careercraft?_ptxn=TXN_ID
+app.post('/api/create-checkout', async (req, res) => {
+  const { userId, plan } = req.body
+  if (!userId || !plan) return res.status(400).json({ error: 'Missing userId or plan' })
+
+  const priceMap = {
+    pro:     process.env.VITE_PADDLE_PRO_PRICE_ID,
+    premium: process.env.VITE_PADDLE_PREMIUM_PRICE_ID,
+  }
+  const priceId = priceMap[plan]
+  if (!priceId) return res.status(400).json({ error: 'Invalid plan' })
+
+  const paddleEnv = process.env.PADDLE_ENV === 'production' ? 'production' : 'sandbox'
+  const paddleBase = paddleEnv === 'production'
+    ? 'https://api.paddle.com'
+    : 'https://sandbox-api.paddle.com'
+
+  try {
+    const paddleRes = await fetch(`${paddleBase}/transactions`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.PADDLE_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        items: [{ price_id: priceId, quantity: 1 }],
+        custom_data: { userId },
+      }),
+    })
+
+    const paddleData = await paddleRes.json()
+    if (!paddleRes.ok) {
+      console.error('Paddle create-transaction error:', paddleData)
+      return res.status(502).json({ error: 'Could not create checkout session. Try again.' })
+    }
+
+    const transactionId = paddleData.data?.id
+    if (!transactionId) return res.status(502).json({ error: 'No transaction ID returned by Paddle.' })
+
+    return res.json({ transactionId })
+  } catch (err) {
+    console.error('create-checkout error:', err)
+    return res.status(500).json({ error: 'Server error. Please try again.' })
+  }
+})
+
 // ── POST /api/generate ──────────────────────────────────────
 app.post('/api/generate', async (req, res) => {
   const { prompt, userId } = req.body
