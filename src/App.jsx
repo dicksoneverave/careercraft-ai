@@ -31,7 +31,7 @@ function PublicRoute({ children }) {
 
 export default function App() {
   return (
-    <BrowserRouter basename="/careercraft">
+    <BrowserRouter>
       <AuthProvider>
         <ToastProvider>
           <Routes>
