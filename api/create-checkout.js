@@ -15,7 +15,7 @@ module.exports = async function handler(req, res) {
 
   if (!apiKey) return res.status(500).json({ error: 'Paddle API key not configured.' })
 
-  const cleanKey = apiKey.trim()
+  const cleanKey = apiKey.trim().replace(/^Bearer\s+/i, '')
 
   const payload = {
     items: [{ price_id: priceId, quantity: 1 }],
