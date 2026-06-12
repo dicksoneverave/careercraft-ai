@@ -6,9 +6,6 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 )
 
-// Vercel needs raw body for signature verification
-module.exports.config = { api: { bodyParser: false } }
-
 async function getRawBody(req) {
   return new Promise((resolve, reject) => {
     const chunks = []
@@ -18,10 +15,10 @@ async function getRawBody(req) {
   })
 }
 
-module.exports = async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).send('Method not allowed')
 
-  const rawBody  = await getRawBody(req)
+  const rawBody   = await getRawBody(req)
   const signature = req.headers['paddle-signature']
   const secret    = process.env.PADDLE_WEBHOOK_SECRET
 
@@ -35,7 +32,7 @@ module.exports = async function handler(req, res) {
     const ts = tsPart.replace('ts=', '')
     const h1 = h1Part.replace('h1=', '')
     const signedPayload = `${ts}:${rawBody.toString('utf8')}`
-    const expectedSig = crypto.createHmac('sha256', secret).update(signedPayload).digest('hex')
+    const expectedSig   = crypto.createHmac('sha256', secret).update(signedPayload).digest('hex')
 
     if (!crypto.timingSafeEqual(Buffer.from(h1), Buffer.from(expectedSig))) {
       console.warn('Webhook: signature mismatch')
@@ -80,6 +77,7 @@ module.exports = async function handler(req, res) {
           p_end_date:           endDate,
         })
         await supabase.from('profiles').update({ docs_used: 0 }).eq('id', userId)
+        console.log(`Plan updated to ${plan} for user ${userId}`)
         break
 
       case 'subscription.canceled':
@@ -107,3 +105,8 @@ module.exports = async function handler(req, res) {
 
   return res.status(200).send('OK')
 }
+
+// Config must be set AFTER handler is defined so it isn't overwritten
+handler.config = { api: { bodyParser: false } }
+
+module.exports = handler
