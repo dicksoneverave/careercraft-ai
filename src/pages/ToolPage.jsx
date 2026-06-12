@@ -13,7 +13,7 @@ const STEPS = ['fill', 'result']
 export default function ToolPage() {
   const { toolId }  = useParams()
   const navigate    = useNavigate()
-  const { profile, isPro, canGenerate, refreshProfile } = useAuth()
+  const { profile, isPro, isPremium, canGenerate, refreshProfile } = useAuth()
   const toast       = useToast()
   const tool        = TOOL_MAP[toolId]
 
@@ -31,6 +31,36 @@ export default function ToolPage() {
   }, [tool, navigate])
 
   if (!tool) return null
+
+  // Premium gate — show upgrade wall if user tries to access a premium tool without premium plan
+  if (tool.premium && !isPremium) {
+    return (
+      <div className="cc-shell">
+        <Sidebar />
+        <div className="cc-main">
+          <div className="cc-topbar">
+            <span className="cc-topbar-title">{tool.icon} {tool.label}</span>
+          </div>
+          <div className="cc-page" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, textAlign: 'center' }}>
+            <div style={{ fontSize: 48, marginBottom: '1rem' }}>⭐</div>
+            <h2 style={{ fontSize: 22, fontWeight: 800, color: 'white', marginBottom: '.5rem' }}>Premium tool</h2>
+            <p style={{ fontSize: 14, color: 'var(--text-mid)', maxWidth: 380, lineHeight: 1.7, marginBottom: '1.5rem' }}>
+              <strong style={{ color: 'white' }}>{tool.label}</strong> is available on the Premium plan.
+              Upgrade to unlock this tool plus LinkedIn DM templates, salary negotiation guides, and interview follow-up emails.
+            </p>
+            <div style={{ display: 'flex', gap: '.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <button className="btn btn-amber" onClick={() => navigate('/app/pricing')}>
+                Upgrade to Premium — $29/mo →
+              </button>
+              <button className="btn btn-ghost" onClick={() => navigate('/app')}>
+                Back to Dashboard
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   function setField(id, val) {
     setFields(prev => ({ ...prev, [id]: val }))
@@ -177,8 +207,15 @@ export default function ToolPage() {
               {/* Tool info banner */}
               <div style={{ background: tool.colorLight, border: `1px solid ${tool.color}30`, borderRadius: 'var(--radius-lg)', padding: '1rem 1.25rem', marginBottom: '1.5rem', display: 'flex', gap: '.75rem', alignItems: 'flex-start' }}>
                 <span style={{ fontSize: 24 }}>{tool.icon}</span>
-                <div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: tool.color }}>{tool.label}</div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem', flexWrap: 'wrap' }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: tool.color }}>{tool.label}</div>
+                    {tool.premium && (
+                      <span style={{ fontSize: 10, fontWeight: 700, background: 'rgba(245,158,11,.2)', border: '1px solid rgba(245,158,11,.4)', color: '#b45309', padding: '1px 7px', borderRadius: 20 }}>
+                        ⭐ PREMIUM
+                      </span>
+                    )}
+                  </div>
                   <div style={{ fontSize: 13, color: 'var(--ink-mid)', marginTop: 2, lineHeight: 1.5 }}>{tool.description}</div>
                 </div>
               </div>
