@@ -120,47 +120,55 @@ export default function PricingPage() {
           <span className="cc-topbar-title">Upgrade your plan</span>
         </div>
 
-        <div className="cc-page" style={{ maxWidth: 840 }}>
+        <div className="cc-page" style={{ maxWidth: 860 }}>
+
+          {/* Header */}
           <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, color: 'var(--green)', marginBottom: '.4rem' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '.4rem', background: 'var(--purple-faint)', border: '1px solid var(--purple-border)', color: 'var(--purple-light)', fontSize: 12, fontWeight: 600, padding: '5px 14px', borderRadius: 20, marginBottom: '1rem' }}>
+              ⚡ Monthly Subscriptions
+            </div>
+            <h1 style={{ fontSize: 28, fontWeight: 800, color: 'white', marginBottom: '.4rem', letterSpacing: '-.02em' }}>
               Invest in your career
             </h1>
-            <p style={{ fontSize: 14, color: 'var(--ink-light)' }}>
+            <p style={{ fontSize: 14, color: 'var(--text-mid)' }}>
               One month of Pro pays for itself with a single interview. Cancel anytime.
             </p>
           </div>
 
-          <div className="cc-pricing-grid" style={{ marginBottom: '2.5rem' }}>
-            {PLANS.map(plan => {
-              const isCurrent = currentPlan === plan.id
-              const canUpgrade = !isCurrent && plan.price > 0
+          {/* Pricing cards — Pro + Premium prominent, Free minimal */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+            {PLANS.filter(p => p.id !== 'free').map(plan => {
+              const isCurrent  = currentPlan === plan.id
+              const isPremium  = plan.id === 'premium'
+              const cardClass  = isPremium ? 'cc-pricing-card premium-card' : 'cc-pricing-card featured'
+              const btnClass   = isPremium ? 'btn btn-full btn-amber' : 'btn btn-full btn-primary'
 
               return (
-                <div key={plan.id} className={`cc-pricing-card ${plan.featured ? 'featured' : ''}`}>
-                  {plan.featured && <div className="cc-pricing-badge">Most popular</div>}
-                  <div className="cc-price-name">{plan.name}</div>
-                  <div>
-                    <span className="cc-price-amt">${plan.price}</span>
-                    {plan.price > 0 && <span className="cc-price-per">/month</span>}
+                <div key={plan.id} className={cardClass}>
+                  {isPremium
+                    ? <div className="cc-pricing-badge gold">⭐ PREMIUM VIP</div>
+                    : <div className="cc-pricing-badge">Most popular</div>
+                  }
+                  <div className="cc-price-name" style={{ marginTop: '.25rem' }}>{plan.name}</div>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '.3rem', margin: '.5rem 0 .25rem' }}>
+                    <span className="cc-price-amt" style={{ color: isPremium ? 'var(--gold-light)' : 'white' }}>${plan.price}</span>
+                    <span className="cc-price-per">/mo</span>
                   </div>
                   <div className="cc-price-desc">{plan.desc}</div>
-
                   <ul className="cc-feat-list">
                     {plan.features.map(f => (
-                      <li key={f.text} className={f.yes ? 'yes' : 'no'}>{f.text}</li>
+                      <li key={f.text} className={f.yes ? `yes${isPremium ? ' gold-check' : ''}` : 'no'}>{f.text}</li>
                     ))}
                   </ul>
-
                   <button
-                    className={`btn btn-full ${plan.featured ? 'btn-amber' : 'btn-outline'} ${loading === plan.id ? 'btn-spin' : ''}`}
-                    onClick={() => canUpgrade ? handleUpgrade(plan) : null}
+                    className={`${btnClass} ${loading === plan.id ? 'btn-spin' : ''}`}
+                    onClick={() => !isCurrent && handleUpgrade(plan)}
                     disabled={isCurrent || !!loading}
                   >
                     {!loading && (isCurrent ? '✓ Current plan' : plan.cta)}
                   </button>
-
-                  {isCurrent && currentPlan !== 'free' && (
-                    <p style={{ fontSize: 11, color: 'var(--ink-faint)', textAlign: 'center', marginTop: '.5rem' }}>
+                  {isCurrent && (
+                    <p style={{ fontSize: 11, color: 'var(--text-faint)', textAlign: 'center', marginTop: '.5rem' }}>
                       Renews {profile?.subscription_end_date ? new Date(profile.subscription_end_date).toLocaleDateString() : 'monthly'}
                     </p>
                   )}
@@ -169,20 +177,31 @@ export default function PricingPage() {
             })}
           </div>
 
+          {/* Free tier — compact */}
+          {currentPlan === 'free' && (
+            <div className="cc-pricing-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
+              <div>
+                <div className="cc-price-name">Free plan — current</div>
+                <div style={{ fontSize: 13, color: 'var(--text-mid)' }}>2 docs/month · All 4 tools · PDF only · Watermarked</div>
+              </div>
+              <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--text-faint)' }}>$0</div>
+            </div>
+          )}
+
           {/* Social proof */}
-          <div style={{ background: 'var(--green-faint)', border: '1px solid var(--green-light)30', borderRadius: 'var(--radius-lg)', padding: '1.25rem 1.5rem', marginBottom: '2rem', textAlign: 'center' }}>
+          <div style={{ background: 'var(--purple-faint)', border: '1px solid var(--purple-border)', borderRadius: 'var(--radius-lg)', padding: '1.25rem 1.5rem', marginBottom: '2rem', textAlign: 'center' }}>
             <div style={{ fontSize: 22, marginBottom: '.4rem' }}>🌍</div>
-            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--green)' }}>Used by job seekers in 40+ countries</div>
-            <div style={{ fontSize: 13, color: 'var(--ink-light)', marginTop: '.25rem' }}>Payments via Paddle — secure, global, no Stripe account needed</div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: 'white' }}>Used by job seekers in 40+ countries</div>
+            <div style={{ fontSize: 13, color: 'var(--text-mid)', marginTop: '.25rem' }}>Payments via Paddle — secure, global, tax-compliant in 180+ countries</div>
           </div>
 
           {/* FAQ */}
-          <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: '1rem', color: 'var(--green)' }}>Questions</h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '.75rem' }}>
+          <h2 style={{ fontSize: 15, fontWeight: 700, marginBottom: '1rem', color: 'var(--text-mid)', textTransform: 'uppercase', letterSpacing: '.06em' }}>FAQ</h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '.75rem', marginBottom: '2rem' }}>
             {FAQ.map(([q, a]) => (
               <div key={q} className="cc-card cc-card-sm">
-                <div style={{ fontSize: 13.5, fontWeight: 600, marginBottom: '.3rem' }}>{q}</div>
-                <div style={{ fontSize: 13, color: 'var(--ink-mid)', lineHeight: 1.6 }}>{a}</div>
+                <div style={{ fontSize: 13.5, fontWeight: 600, marginBottom: '.3rem', color: 'white' }}>{q}</div>
+                <div style={{ fontSize: 13, color: 'var(--text-mid)', lineHeight: 1.6 }}>{a}</div>
               </div>
             ))}
           </div>
