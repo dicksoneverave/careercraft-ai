@@ -1,47 +1,55 @@
-const crypto = require('crypto')
 const { createClient } = require('@supabase/supabase-js')
+const crypto = require('crypto')
 
 const supabase = createClient(
   process.env.VITE_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 )
 
-// Disable body parsing — need raw body for HMAC verification
-export const config = { api: { bodyParser: false } }
+// Vercel needs raw body for signature verification
+module.exports.config = { api: { bodyParser: false } }
 
-function getRawBody(req) {
+async function getRawBody(req) {
   return new Promise((resolve, reject) => {
     const chunks = []
     req.on('data', chunk => chunks.push(chunk))
-    req.on('end',  () => resolve(Buffer.concat(chunks)))
+    req.on('end', () => resolve(Buffer.concat(chunks)))
     req.on('error', reject)
   })
 }
 
-module.exports = async (req, res) => {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
+module.exports = async function handler(req, res) {
+  if (req.method !== 'POST') return res.status(405).send('Method not allowed')
 
-  const rawBody = await getRawBody(req)
-  const sig     = req.headers['paddle-signature']
-  const secret  = process.env.PADDLE_WEBHOOK_SECRET
+  const rawBody  = await getRawBody(req)
+  const signature = req.headers['paddle-signature']
+  const secret    = process.env.PADDLE_WEBHOOK_SECRET
 
-  if (!sig || !secret) return res.status(400).send('Bad request')
-
-  try {
-    const body               = rawBody.toString('utf8')
-    const [tsPart, h1Part]   = sig.split(';')
-    const ts                 = tsPart.replace('ts=', '')
-    const h1                 = h1Part.replace('h1=', '')
-    const expected           = crypto.createHmac('sha256', secret).update(`${ts}:${body}`).digest('hex')
-    if (!crypto.timingSafeEqual(Buffer.from(h1), Buffer.from(expected))) {
-      return res.status(403).send('Forbidden')
-    }
-  } catch {
+  if (!signature || !secret) {
+    console.warn('Webhook: missing signature or secret')
     return res.status(400).send('Bad request')
   }
 
-  const { event_type, data } = JSON.parse(rawBody.toString('utf8'))
-  console.log(`Paddle webhook: ${event_type}`)
+  try {
+    const [tsPart, h1Part] = signature.split(';')
+    const ts = tsPart.replace('ts=', '')
+    const h1 = h1Part.replace('h1=', '')
+    const signedPayload = `${ts}:${rawBody.toString('utf8')}`
+    const expectedSig = crypto.createHmac('sha256', secret).update(signedPayload).digest('hex')
+
+    if (!crypto.timingSafeEqual(Buffer.from(h1), Buffer.from(expectedSig))) {
+      console.warn('Webhook: signature mismatch')
+      return res.status(403).send('Forbidden')
+    }
+  } catch (err) {
+    console.error('Webhook signature error:', err)
+    return res.status(400).send('Bad request')
+  }
+
+  const event = JSON.parse(rawBody.toString('utf8'))
+  const { event_type, data } = event
+
+  console.log(`Paddle webhook: ${event_type}`, data?.id)
 
   try {
     const userId           = data?.custom_data?.userId
@@ -55,7 +63,10 @@ module.exports = async (req, res) => {
     if (priceId === process.env.VITE_PADDLE_PRO_PRICE_ID)     plan = 'pro'
     if (priceId === process.env.VITE_PADDLE_PREMIUM_PRICE_ID) plan = 'premium'
 
-    if (!userId) return res.status(200).send('OK')
+    if (!userId) {
+      console.warn('Webhook: no userId in customData')
+      return res.status(200).send('OK')
+    }
 
     switch (event_type) {
       case 'subscription.activated':
@@ -86,6 +97,9 @@ module.exports = async (req, res) => {
       case 'subscription.past_due':
         await supabase.from('profiles').update({ subscription_status: 'past_due' }).eq('id', userId)
         break
+
+      default:
+        console.log(`Unhandled event type: ${event_type}`)
     }
   } catch (err) {
     console.error('Webhook processing error:', err)

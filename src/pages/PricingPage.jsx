@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { useToast } from '../components/Toast'
 import Sidebar from '../components/Sidebar'
@@ -37,6 +37,7 @@ const PLANS = [
       { text: 'Email support',           yes: true },
     ],
     cta: 'Upgrade to Pro',
+    priceId: () => import.meta.env.VITE_PADDLE_PRO_PRICE_ID,
   },
   {
     id: 'premium',
@@ -51,6 +52,7 @@ const PLANS = [
       { text: 'Priority support',        yes: true },
     ],
     cta: 'Upgrade to Premium',
+    priceId: () => import.meta.env.VITE_PADDLE_PREMIUM_PRICE_ID,
   },
 ]
 
@@ -70,26 +72,45 @@ export default function PricingPage() {
   const currentPlan = profile?.plan || 'free'
 
   async function handleUpgrade(plan) {
-    if (!plan.id || plan.id === 'free') return
+    if (!plan.priceId) return
+    const priceId = plan.priceId()
+    if (!priceId) { toast('Price ID not configured.', 'error'); return }
+
     setLoading(plan.id)
     try {
-      const res = await fetch('/api/create-checkout', {
+      const txRes = await fetch('/api/create-checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: profile?.id, plan: plan.id }),
+        body: JSON.stringify({ priceId, userId: profile?.id, email: profile?.email }),
       })
-      const data = await res.json()
-      if (!res.ok || !data.transactionId) {
-        toast(data.error || 'Could not start checkout. Try again.', 'error')
-        setLoading(null)
-        return
+
+      if (!txRes.ok) {
+        const err = await txRes.json()
+        throw new Error(err.error || 'Could not create checkout.')
       }
-      window.location.href = `https://pay.javetech.online/careercraft?_ptxn=${data.transactionId}`
-    } catch {
-      toast('Could not connect to payment server. Try again.', 'error')
+
+      const { checkoutUrl } = await txRes.json()
+      if (!checkoutUrl) throw new Error('No checkout URL returned. Please try again.')
+
+      window.location.href = checkoutUrl
+    } catch (err) {
+      toast(err.message || 'Could not open checkout. Contact support.', 'error')
       setLoading(null)
     }
   }
+
+  // Detect return from Paddle checkout (successUrl redirect)
+  const refreshed = useRef(false)
+  useEffect(() => {
+    if (refreshed.current) return
+    if (window.location.search.includes('success=1')) {
+      refreshed.current = true
+      setTimeout(() => {
+        refreshProfile()
+        toast('Payment complete! Your plan is being activated.', 'success')
+      }, 3000)
+    }
+  }, [])
 
   return (
     <div className="cc-shell">
